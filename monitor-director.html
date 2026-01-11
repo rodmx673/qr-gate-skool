@@ -19,8 +19,8 @@
                 📷 ABRIR ESCÁNER
             </a>
             <div class="text-right">
-                <p id="nombreDirector" class="text-[10px] font-bold opacity-80 uppercase">Director</p>
-                <p id="reloj" class="text-xs font-mono">00:00:00</p>
+                <p id="nombreDirector" class="text-[10px] font-bold opacity-80 uppercase leading-none mb-1">Cargando...</p>
+                <p id="reloj" class="text-xs font-mono text-indigo-300">00:00:00</p>
             </div>
         </div>
     </header>
@@ -29,7 +29,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-indigo-500 text-center">
                 <p class="text-slate-400 text-xs font-bold uppercase">ID Escuela</p>
-                <p id="idEscuela" class="text-2xl font-black text-slate-700">---</p>
+                <p id="idEscuela" class="text-2xl font-black text-slate-700 italic">---</p>
             </div>
             <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-emerald-500 text-center">
                 <p class="text-slate-400 text-xs font-bold uppercase">Registros Hoy</p>
@@ -42,8 +42,9 @@
         </div>
 
         <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
-            <div class="p-6 bg-slate-50 border-b border-slate-100">
+            <div class="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                 <h2 class="font-black text-slate-800 uppercase text-sm italic">Últimos Movimientos en Vivo</h2>
+                <span class="text-[10px] bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">MONITOR ACTIVO</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -55,7 +56,7 @@
                         </tr>
                     </thead>
                     <tbody id="listaLogs" class="divide-y divide-slate-50 font-medium">
-                        <tr><td colspan="3" class="p-20 text-center text-slate-400 italic">Buscando datos...</td></tr>
+                        <tr><td colspan="3" class="p-20 text-center text-slate-400 italic">Conectando con el servidor...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -63,18 +64,22 @@
     </main>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // LINK ACTUALIZADO AL SERVIDOR CORRECTO (V30)
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        
         const session = JSON.parse(localStorage.getItem('userSession'));
         let countdown = 10;
 
+        // Validación de Seguridad y Sesión
         if (!session || session.rol !== "Director") {
             window.location.replace('login.html');
         } else {
             document.getElementById('nombreDirector').innerText = session.nombre;
-            document.getElementById('idEscuela').innerText = session.idEscuela;
+            document.getElementById('idEscuela').innerText = session.idEscuela || "---";
             actualizarMonitor();
         }
 
+        // Reloj y Contador de refresco
         setInterval(() => {
             document.getElementById('reloj').innerText = new Date().toLocaleTimeString();
             countdown--;
@@ -87,32 +92,42 @@
 
         async function actualizarMonitor() {
             try {
+                // Llamada a la acción específica para directores
                 const resp = await fetch(`${MI_LINK_SERVIDOR}?action=getDirectorInfo&email=${encodeURIComponent(session.email)}`);
                 const data = await resp.json();
 
                 if (data.status === "success") {
+                    // Actualizar contador total
                     document.getElementById('countAsistencias').innerText = data.totalAsistencias;
+                    
                     const tbody = document.getElementById('listaLogs');
                     tbody.innerHTML = "";
 
-                    if (data.ultimasAsistencias.length > 0) {
+                    if (data.ultimasAsistencias && data.ultimasAsistencias.length > 0) {
                         data.ultimasAsistencias.forEach(reg => {
                             const esEntrada = reg.tipo === "Entrada";
-                            const color = esEntrada ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700";
+                            const colorClass = esEntrada ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700";
+                            
                             tbody.innerHTML += `
                                 <tr class="hover:bg-slate-50 transition">
-                                    <td class="p-4 uppercase text-xs font-black text-slate-700">${reg.nombre}</td>
-                                    <td class="p-4 text-xs text-slate-500 font-mono">${reg.hora}</td>
+                                    <td class="p-4">
+                                        <p class="uppercase text-xs font-black text-slate-700">${reg.nombre}</p>
+                                        <p class="text-[9px] text-slate-400 font-mono">${reg.email}</p>
+                                    </td>
+                                    <td class="p-4 text-xs text-slate-500 font-mono font-bold">${reg.hora}</td>
                                     <td class="p-4 text-center">
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${color}">${reg.tipo}</span>
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${colorClass}">${reg.tipo}</span>
                                     </td>
                                 </tr>`;
                         });
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="3" class="p-20 text-center text-slate-400">Sin movimientos hoy.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-20 text-center text-slate-400 italic">No se ha registrado actividad el día de hoy.</td></tr>`;
                     }
                 }
-            } catch (e) { console.error("Error cargando monitor."); }
+            } catch (e) { 
+                console.error("Error cargando monitor:", e);
+                // No detenemos el flujo para que el siguiente intento de 10s pueda funcionar
+            }
         }
     </script>
 </body>

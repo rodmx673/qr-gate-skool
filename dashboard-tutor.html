@@ -35,8 +35,7 @@
 
         <div class="mb-6">
             <p class="text-slate-500 text-xs mb-3 font-black uppercase tracking-widest">Alumnos vinculados:</p>
-            <div id="botonesHijos" class="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
-                </div>
+            <div id="botonesHijos" class="flex gap-3 overflow-x-auto pb-4 custom-scrollbar"></div>
         </div>
 
         <div id="perfilHijo" class="bg-white p-8 rounded-3xl shadow-lg mb-6 border-t-8 border-blue-500 transition-all">
@@ -64,8 +63,7 @@
                             <th class="p-4">Movimiento</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaAsistencias" class="divide-y divide-slate-100">
-                        </tbody>
+                    <tbody id="tablaAsistencias" class="divide-y divide-slate-100"></tbody>
                 </table>
             </div>
             <div id="mensajeVacio" class="p-10 text-center text-slate-400 hidden">
@@ -75,7 +73,9 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL UNIFICADA (Asegúrate que coincida con registro y login)
+        const API_URL = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        
         let hijosData = [];
         let tutorEmailLogueado = "";
 
@@ -90,7 +90,7 @@
             btn.disabled = true;
 
             try {
-                const resp = await fetch(`${API_URL}?action=loginTutor&email=${email}&password=${pass}`);
+                const resp = await fetch(`${API_URL}?action=loginTutor&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`);
                 const data = await resp.json();
 
                 if (data.status === "success") {
@@ -137,7 +137,7 @@
             tabla.innerHTML = "<tr><td colspan='3' class='p-10 text-center text-blue-500 animate-pulse'>Cargando registros...</td></tr>";
             
             try {
-                const resp = await fetch(`${API_URL}?action=getHijoAsistencias&idHijo=${hijo.id}`);
+                const resp = await fetch(`${API_URL}?action=getHijoAsistencias&idHijo=${encodeURIComponent(hijo.id)}`);
                 const data = await resp.json();
                 
                 if(data.asistencias.length === 0) {
@@ -172,12 +172,12 @@
             btn.innerText = "VINCULANDO...";
 
             try {
-                const resp = await fetch(`${API_URL}?action=vincularHijo&emailTutor=${tutorEmailLogueado}&idHijo=${idHijo}`);
+                const resp = await fetch(`${API_URL}?action=vincularHijo&emailTutor=${encodeURIComponent(tutorEmailLogueado)}&idHijo=${encodeURIComponent(idHijo)}`);
                 const data = await resp.json();
 
                 if(data.status === "success") {
                     alert("✅ ¡Hijo vinculado correctamente!");
-                    location.reload(); // Recargamos para actualizar la lista
+                    location.reload();
                 } else {
                     alert("❌ " + data.message);
                 }

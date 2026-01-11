@@ -9,13 +9,14 @@
     <style>
         .scan-success { border: 10px solid #22c55e !important; box-shadow: 0 0 30px #22c55e; }
         .scan-error { border: 10px solid #ef4444 !important; box-shadow: 0 0 30px #ef4444; }
+        #reader video { border-radius: 20px; }
     </style>
 </head>
 <body class="bg-slate-900 min-h-screen text-white p-4 font-sans">
     <div class="max-w-md mx-auto">
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-blue-400 italic">QR Gate Skool</h1>
-            <p class="text-slate-400 text-sm">Control de Acceso V14</p>
+            <p class="text-slate-400 text-sm">Control de Acceso V30</p>
         </header>
 
         <div id="wrapper" class="bg-white rounded-3xl overflow-hidden shadow-2xl mb-6 border-4 border-slate-700 transition-all duration-300">
@@ -28,49 +29,61 @@
             <div id="iconoGrande" class="text-5xl mt-2"></div>
         </div>
 
-        <button id="btnEncender" onclick="iniciarCamaraManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg">
+        <button id="btnEncender" onclick="iniciarCamaraManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg transition transform active:scale-95">
             🚀 ENCENDER CÁMARA
         </button>
         
         <div class="text-center mt-6">
-            <a href="monitor-director.html" class="text-slate-500 text-xs hover:text-white underline">Volver al Dashboard</a>
+            <a href="dashboard-director.html" class="text-slate-500 text-xs hover:text-white underline">Volver al Dashboard</a>
         </div>
     </div>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL ACTUALIZADA AL NUEVO SERVIDOR (V30)
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        
         const html5QrCode = new Html5Qrcode("reader");
         let isScanning = false;
 
+        // Sistema de audio para feedback
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playSound(freq, duration, type) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) { console.log("Audio error"); }
         }
 
         async function iniciarCamaraManual() {
             const btn = document.getElementById('btnEncender');
             btn.innerText = "INICIANDO...";
             try {
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 25, qrbox: 250 }, onScanSuccess);
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    { fps: 25, qrbox: { width: 250, height: 250 } }, 
+                    onScanSuccess
+                );
                 btn.classList.add('hidden');
                 isScanning = true;
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-            } catch (err) { btn.innerText = "ERROR DE CÁMARA"; }
+            } catch (err) { 
+                btn.innerText = "ERROR DE CÁMARA";
+                console.error(err);
+            }
         }
 
         async function onScanSuccess(decodedText) {
             if (!isScanning) return;
-            isScanning = false;
+            isScanning = false; // Pausar escaneo mientras procesa
 
             const wrapper = document.getElementById('wrapper');
             const panel = document.getElementById('resultado');
@@ -78,40 +91,43 @@
             const txtStatus = document.getElementById('msgStatus');
             const icono = document.getElementById('iconoGrande');
 
-            panel.className = "bg-blue-600 p-6 rounded-2xl text-center mb-6 block";
+            // UI de carga
+            panel.className = "bg-blue-600 p-6 rounded-2xl text-center mb-6 block animate-pulse";
             txtStatus.innerText = "PROCESANDO...";
-            txtNombre.innerText = "ENVIANDO...";
+            txtNombre.innerText = "ENVIANDO REGISTRO...";
             icono.innerText = "⏳";
 
-            // ---- CORRECCIÓN: USAR POST PARA EL ESCÁNER ----
-            fetch(MI_LINK_SERVIDOR, {
-                method: "POST",
-                mode: "no-cors", // Crucial para evitar bloqueo CORS en Google Apps Script
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "scan",
-                    email: decodedText.trim().toLowerCase()
-                })
+            // Enviar datos al Servidor de Google Sheets
+            const urlFinal = `${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(decodedText.trim().toLowerCase())}`;
+
+            fetch(urlFinal, {
+                method: "GET", // Usamos GET para evitar problemas de CORS complejos en redirecciones de Google Script
+                mode: "cors"
             })
-            .then(() => {
-                // Con no-cors no podemos leer la respuesta, pero si llega aquí es éxito
-                playSound(880, 0.1, 'sine');
-                wrapper.classList.add('scan-success');
-                panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
-                txtStatus.innerText = "¡REGISTRO ENVIADO!";
-                txtNombre.innerText = decodedText.split('@')[0];
-                icono.innerText = "✅";
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    playSound(880, 0.1, 'sine');
+                    wrapper.classList.add('scan-success');
+                    panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
+                    txtStatus.innerText = `¡${data.tipo.toUpperCase()} REGISTRADA!`;
+                    txtNombre.innerText = data.nombre || decodedText.split('@')[0];
+                    icono.innerText = "✅";
+                } else {
+                    throw new Error(data.message);
+                }
             })
             .catch(err => {
                 console.error("Error:", err);
                 playSound(150, 0.3, 'sawtooth');
                 wrapper.classList.add('scan-error');
                 panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
-                txtStatus.innerText = "ERROR DE CONEXIÓN";
-                txtNombre.innerText = "REINTENTAR";
+                txtStatus.innerText = "ERROR";
+                txtNombre.innerText = "NO ENCONTRADO / ERROR";
                 icono.innerText = "❌";
             })
             .finally(() => {
+                // Reiniciar el escáner después de 3 segundos
                 setTimeout(() => {
                     panel.className = "hidden";
                     wrapper.classList.remove('scan-success', 'scan-error');

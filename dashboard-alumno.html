@@ -54,7 +54,8 @@
     </main>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL ACTUALIZADA AL NUEVO SERVIDOR (V30)
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         window.onload = () => {
             const userData = localStorage.getItem('userSession');
@@ -75,12 +76,13 @@
             // Limpiar contenedor QR por si acaso
             document.getElementById("qrcode").innerHTML = "";
 
-            // Generar el QR usando el Email (es el ID único para el scanner)
+            // Generar el QR usando el Email
+            // Es vital que use el email, ya que el scanner busca este dato en la base de datos
             new QRCode(document.getElementById("qrcode"), {
-                text: user.email,
+                text: user.email.toLowerCase().trim(),
                 width: 200,
                 height: 200,
-                colorDark : "#0f172a", // Slate-900
+                colorDark : "#0f172a", // Slate-900 para mejor contraste
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
@@ -88,15 +90,18 @@
 
         async function descargarCredencial() {
             const btn = document.querySelector('button[onclick="descargarCredencial()"]');
+            const originalText = btn.innerHTML;
             btn.innerText = "GENERANDO IMAGEN...";
+            btn.disabled = true;
             
             const container = document.getElementById('credencialContainer');
             
             try {
                 const canvas = await html2canvas(container, {
-                    scale: 3, // Mayor calidad de imagen
+                    scale: 3, 
                     backgroundColor: null,
-                    borderRadius: 20
+                    logging: false,
+                    useCORS: true
                 });
                 
                 const link = document.createElement('a');
@@ -104,9 +109,11 @@
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             } catch (err) {
+                console.error(err);
                 alert("Error al generar la imagen. Intenta tomar una captura de pantalla.");
             } finally {
-                btn.innerHTML = "<span>📥</span> GUARDAR CREDENCIAL";
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 

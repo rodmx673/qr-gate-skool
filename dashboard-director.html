@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor en Vivo - QR Gate Skool</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans">
 
@@ -56,7 +63,7 @@
                     <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
                     Últimos Movimientos de Alumnos
                 </h2>
-                <span class="text-[10px] bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">V14 - ONLINE</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">V30 - ONLINE</span>
             </div>
             
             <div class="overflow-x-auto">
@@ -77,7 +84,9 @@
     </div>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL ACTUALIZADA AL NUEVO SERVIDOR REPARADO
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        
         let countdown = 10;
         const session = JSON.parse(localStorage.getItem('userSession'));
 
@@ -94,7 +103,7 @@
             actualizarMonitor();
         }
 
-        // Sistema de auto-refresco
+        // Sistema de auto-refresco cada 10 segundos
         setInterval(() => {
             countdown--;
             document.getElementById('timer').innerText = countdown + "s";
@@ -106,6 +115,7 @@
 
         async function actualizarMonitor() {
             try {
+                // Se usa encodeURIComponent para evitar errores con caracteres especiales en el email
                 const url = `${MI_LINK_SERVIDOR}?action=getDirectorInfo&email=${encodeURIComponent(session.email)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
@@ -121,7 +131,7 @@
                             const esEntrada = reg.tipo === "Entrada";
                             const badgeColor = esEntrada ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-orange-100 text-orange-700 border-orange-200";
                             
-                            // Actualizar el "Último Tipo" con el registro más reciente
+                            // Actualizar el "Último Tipo" con el registro más reciente (el primero del array)
                             if(index === 0) document.getElementById('lastType').innerText = reg.tipo;
 
                             tbody.innerHTML += `
@@ -130,7 +140,7 @@
                                         <p class="font-black text-slate-700 text-sm uppercase">${reg.nombre}</p>
                                         <p class="text-[9px] text-slate-400 font-mono">${reg.email}</p>
                                     </td>
-                                    <td class="p-4 text-xs font-bold text-slate-50">${reg.hora}</td>
+                                    <td class="p-4 text-xs font-bold text-slate-600 italic">${reg.hora}</td>
                                     <td class="p-4 text-center">
                                         <span class="px-4 py-1 rounded-full text-[10px] font-black uppercase border ${badgeColor}">
                                             ${reg.tipo}
@@ -145,7 +155,7 @@
                     }
                 }
             } catch (e) {
-                console.error("Error de actualización:", e);
+                console.error("Error de actualización del monitor:", e);
             }
         }
     </script>
