@@ -31,6 +31,10 @@
         <button id="btnEncender" onclick="iniciarCamaraManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg">
             🚀 ENCENDER CÁMARA
         </button>
+        
+        <div class="text-center mt-6">
+            <a href="monitor-director.html" class="text-slate-500 text-xs hover:text-white underline">Volver al Dashboard</a>
+        </div>
     </div>
 
     <script>
@@ -79,34 +83,41 @@
             txtNombre.innerText = "ENVIANDO...";
             icono.innerText = "⏳";
 
-            // ---- NUEVO FETCH CON GET (SIN CORS) ----
-            fetch(`${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(decodedText)}`)
-                .then(r => r.json())
-                .then(res => {
-                    console.log("Servidor respondió:", res);
-                    playSound(880, 0.1, 'sine');
-                    wrapper.classList.add('scan-success');
-                    panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
-                    txtStatus.innerText = "¡REGISTRO EXITOSO!";
-                    txtNombre.innerText = decodedText.split('@')[0];
-                    icono.innerText = "✅";
+            // ---- CORRECCIÓN: USAR POST PARA EL ESCÁNER ----
+            fetch(MI_LINK_SERVIDOR, {
+                method: "POST",
+                mode: "no-cors", // Crucial para evitar bloqueo CORS en Google Apps Script
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "scan",
+                    email: decodedText.trim().toLowerCase()
                 })
-                .catch(err => {
-                    console.error("Error:", err);
-                    playSound(150, 0.3, 'sawtooth');
-                    wrapper.classList.add('scan-error');
-                    panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
-                    txtStatus.innerText = "ERROR DE RED";
-                    txtNombre.innerText = "REINTENTAR";
-                    icono.innerText = "❌";
-                })
-                .finally(() => {
-                    setTimeout(() => {
-                        panel.classList.add('hidden');
-                        wrapper.classList.remove('scan-success', 'scan-error');
-                        isScanning = true;
-                    }, 2000);
-                });
+            })
+            .then(() => {
+                // Con no-cors no podemos leer la respuesta, pero si llega aquí es éxito
+                playSound(880, 0.1, 'sine');
+                wrapper.classList.add('scan-success');
+                panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
+                txtStatus.innerText = "¡REGISTRO ENVIADO!";
+                txtNombre.innerText = decodedText.split('@')[0];
+                icono.innerText = "✅";
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                playSound(150, 0.3, 'sawtooth');
+                wrapper.classList.add('scan-error');
+                panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
+                txtStatus.innerText = "ERROR DE CONEXIÓN";
+                txtNombre.innerText = "REINTENTAR";
+                icono.innerText = "❌";
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    panel.className = "hidden";
+                    wrapper.classList.remove('scan-success', 'scan-error');
+                    isScanning = true;
+                }, 3000);
+            });
         }
     </script>
 </body>
