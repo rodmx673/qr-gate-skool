@@ -7,52 +7,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
-
     <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <h1 class="text-3xl font-extrabold text-center text-blue-600 mb-2 italic">QR GATE</h1>
         <p class="text-gray-500 text-center mb-8">Crear Nueva Cuenta</p>
         
-        <div id="registroForm">
-            <label class="block mb-2 text-sm font-semibold text-gray-700">¿Quién eres?</label>
-            <select id="rol" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition" onchange="toggleFields()">
-                <option value="Alumno">Alumno</option>
-                <option value="Tutor">Tutor / Padre</option>
-                <option value="Docente">Docente</option>
-                <option value="Administrativo">Administrativo</option>
-                <option value="Director">Director (Nueva Escuela)</option>
-            </select>
+        <label class="block mb-2 text-sm font-semibold text-gray-700">¿Quién eres?</label>
+        <select id="rol" class="w-full p-3 border border-gray-300 rounded-lg mb-4 outline-none" onchange="toggleFields()">
+            <option value="Alumno">Alumno</option>
+            <option value="Tutor">Tutor / Padre</option>
+            <option value="Docente">Docente</option>
+            <option value="Administrativo">Administrativo</option>
+            <option value="Director">Director (Nueva Escuela)</option>
+        </select>
 
-            <input type="text" id="nombre" placeholder="Nombre completo" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700">
-            <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700">
-            <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700">
+        <input type="text" id="nombre" placeholder="Nombre completo" class="w-full p-3 border border-gray-300 rounded-lg mb-4 outline-none text-slate-700">
+        <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 border border-gray-300 rounded-lg mb-4 outline-none text-slate-700">
+        <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 border border-gray-300 rounded-lg mb-4 outline-none text-slate-700">
 
-            <div id="divDirectorID">
-                <label class="block mb-2 text-sm font-semibold text-gray-700">ID de tu Escuela (Pídelo a tu Director)</label>
-                <input type="text" id="idDirector" placeholder="Ej: ESC-8660" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none uppercase text-slate-700 font-mono">
-            </div>
-
-            <button onclick="registrar()" id="btnRegistrar" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition duration-300 shadow-lg mb-4 transform active:scale-95">
-                Registrarse ahora
-            </button>
-
-            <p class="text-center text-sm text-gray-500">
-                ¿Ya tienes cuenta? <a href="login.html" class="text-blue-600 font-bold hover:underline">Inicia Sesión</a>
-            </p>
+        <div id="divDirectorID">
+            <label class="block mb-2 text-sm font-semibold text-gray-700">ID de tu Escuela</label>
+            <input type="text" id="idDirector" placeholder="Ej: ESC-8660" class="w-full p-3 border border-gray-300 rounded-lg mb-4 uppercase font-mono">
         </div>
+
+        <button onclick="registrar()" id="btnRegistrar" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg mb-4">
+            Registrarse ahora
+        </button>
+
+        <p class="text-center text-sm text-gray-500">
+            ¿Ya tienes cuenta? <a href="login.html" class="text-blue-600 font-bold hover:underline">Inicia Sesión</a>
+        </p>
     </div>
 
     <script>
+        // USA TU URL DE LA NUEVA IMPLEMENTACIÓN (VERSIÓN 25)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
         
         function toggleFields() {
             const rol = document.getElementById('rol').value;
-            const divDir = document.getElementById('divDirectorID');
-            // Los Tutores y Directores no necesitan poner un ID de escuela al registrarse
-            if (rol === "Director" || rol === "Tutor") {
-                divDir.style.display = "none";
-            } else {
-                divDir.style.display = "block";
-            }
+            document.getElementById('divDirectorID').style.display = (rol === "Director" || rol === "Tutor") ? "none" : "block";
         }
         toggleFields();
 
@@ -64,63 +56,32 @@
             const password = document.getElementById('password').value.trim();
             const idDirector = document.getElementById('idDirector').value.trim();
             
-            if(!nombre || !email || !password) {
-                alert("⚠️ Por favor llena todos los campos obligatorios.");
-                return;
-            }
-
-            // Validación de ID de escuela solo para alumnos, docentes y admin
-            if(rol !== "Director" && rol !== "Tutor" && !idDirector) {
-                alert("⚠️ Debes ingresar el ID de tu escuela para registrarte.");
-                return;
-            }
+            if(!nombre || !email || !password) return alert("Llena los campos obligatorios.");
 
             btn.disabled = true;
-            btn.innerText = "Guardando en la nube...";
+            btn.innerText = "Guardando...";
 
-            // Usamos URLSearchParams para enviar datos por POST
-            const params = new URLSearchParams();
-            params.append('action', 'registro');
-            params.append('nombre', nombre);
-            params.append('email', email);
-            params.append('password', password);
-            params.append('rol', rol);
-            params.append('idDirectorIngresado', (rol === "Tutor" || rol === "Director") ? "" : idDirector);
+            const datos = {
+                action: 'registro',
+                nombre: nombre,
+                email: email,
+                password: password,
+                rol: rol,
+                idDirectorIngresado: idDirector
+            };
 
             try {
+                // ENVIAR COMO JSON DIRECTO
                 await fetch(MI_LINK_SERVIDOR, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: params.toString(),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
+                    body: JSON.stringify(datos)
                 });
 
-                // Simulación de espera para asegurar que Google reciba el dato
-                setTimeout(() => {
-                    localStorage.setItem('userSession', JSON.stringify({
-                        nombre: nombre,
-                        email: email,
-                        rol: rol,
-                        idEscuela: idDirector || "N/A"
-                    }));
-
-                    alert("✅ ¡Registro enviado con éxito!");
-
-                    // Redirección inteligente
-                    if (rol === "Director") {
-                        window.location.href = 'monitor-director.html';
-                    } else if (rol === "Tutor") {
-                        window.location.href = 'dashboard-tutor.html';
-                    } else {
-                        window.location.href = 'login.html';
-                    }
-                }, 2000);
-
+                alert("✅ ¡Registro enviado! Revisa tu Excel.");
+                window.location.href = (rol === "Tutor") ? 'login-tutor.html' : 'login.html';
             } catch (error) {
-                console.error("Error en registro:", error);
-                alert("🚀 Error de conexión. Intenta de nuevo.");
+                alert("Error de conexión.");
                 btn.disabled = false;
                 btn.innerText = "Registrarse ahora";
             }
